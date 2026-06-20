@@ -1,0 +1,67 @@
+# Despliegue del ejemplo a Azure Container Apps.
+# Manual (workflow_dispatch): NO se ejecuta solo; lo lanzas tú desde la pestaña Actions.
+# Requiere secretos del repo (ver azure/README.md):
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID  (OIDC, sin contraseña)
+#   PG_ADMIN_PASSWORD
+name: Deploy a Azure (Container Apps)
+
+on:
+  workflow_dispatch:
+    inputs:
+      resourceGroup:
+        description: Resource group
+        default: rg-banca-academia
+        required: true
+      location:
+        description: Región de Azure
+        default: eastus
+        required: true
+
+permissions:
+  id-token: write   # necesario para el login OIDC
+  contents: read
+
+env:
+  RG: ${{ inputs.resourceGroup }}
+  LOCATION: ${{ inputs.location }}
+  APP_NAME: banca-app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login en Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Crear resource group
+        run: az group create -n "$RG" -l "$LOCATION"
+
+      - name: Desplegar infraestructura (Bicep)
+        run: |
+          az deployment group create \
+            -g "$RG" -n main \
+            -f azure/infra/main.bicep \
+            -p namePrefix=banca pgAdminUser=banca \
+               pgAdminPassword='${{ secrets.PG_ADMIN_PASSWORD }}'
+
+      - name: Obtener nombre del ACR
+        id: acr
+        run: echo "name=$(az deployment group show -g "$RG" -n main --query properties.outputs.acrName.value -o tsv)" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push de la imagen (en el ACR, sin Docker local)
+        run: az acr build -r "${{ steps.acr.outputs.name }}" -t banca/ejemplo:${{ github.sha }} ejemplo
+
+      - name: Actualizar la Container App con la imagen nueva
+        run: |
+          ACR_LOGIN=$(az acr show -n "${{ steps.acr.outputs.name }}" --query loginServer -o tsv)
+          az containerapp update -g "$RG" -n "$APP_NAME" --image "$ACR_LOGIN/banca/ejemplo:${{ github.sha }}"
+
+      - name: URL pública de la app
+        run: |
+          echo "App: https://$(az containerapp show -g "$RG" -n "$APP_NAME" --query properties.configuration.ingress.fqdn -o tsv)"

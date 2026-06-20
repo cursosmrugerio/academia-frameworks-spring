@@ -1,0 +1,40 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+.mvn/timing.properties
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+
+# Build / runtime
+*.class
+*.log
+hs_err_pid*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Configuración local (no versionar credenciales/entornos)
+application-local.yml
+application-local.properties
+*.env
+.env
+
+# Contenido local no relacionado al curso
+audio/
+
+# Temario original en PDF (no se versiona; el alcance está en temario/README.md)
+temario/*.pdf

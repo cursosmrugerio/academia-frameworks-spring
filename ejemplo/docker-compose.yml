@@ -1,0 +1,34 @@
+# Bases de datos del ejemplo (Módulo 6): PostgreSQL (relacional) + MongoDB (documental).
+# Uso:
+#   docker compose up -d
+#   mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+#
+# restart: unless-stopped -> se reinician solos cuando Docker arranca,
+# salvo que los detengas a propósito (docker compose stop). Los datos viven en
+# volúmenes con nombre, así que persisten aunque se reinicien o se recreen.
+services:
+  postgres:
+    image: postgres:16
+    container_name: banca-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: banca
+      POSTGRES_USER: banca
+      POSTGRES_PASSWORD: banca
+    ports:
+      - "5432:5432"
+    volumes:
+      - banca-pgdata:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:7
+    container_name: banca-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - banca-mongodata:/data/db
+
+volumes:
+  banca-pgdata:
+  banca-mongodata:

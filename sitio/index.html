@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guía de estudio — BPM con Spring</title>
+  <link rel="stylesheet" href="css/highlight-atom-one-dark.min.css">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <button id="menu-btn" class="icon-btn menu-btn" aria-label="Menú">☰</button>
+    <div class="marca"><span class="emoji">🎓</span>Guía de estudio<span class="marca-sub"> · BPM con Spring</span></div>
+    <input id="buscador" class="buscador" type="search" placeholder="Buscar tema o concepto…" aria-label="Buscar">
+    <button id="toggle-tema" class="icon-btn" aria-label="Cambiar tema">🌓</button>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar"><nav id="nav"></nav></aside>
+    <main class="contenido-wrap"><article id="contenido" class="contenido"></article></main>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- EMPIEZA AQUÍ                                                   -->
+  <!-- ============================================================= -->
+
+  <script type="text/markdown" data-id="inicio" data-grupo="Empieza aquí" data-titulo="Inicio">
+# 🎓 Guía de estudio — BPM bancario con Spring
+
+Bienvenido(a). Este sitio te lleva de **cero a dominar** las herramientas del temario (Módulos 5 y 6) usando **un solo proyecto real**: un sistema de procesos de negocio (BPM) de banca hecho con **Kogito sobre Spring Boot**.
+
+> En vez de ejemplos sueltos, aprendes cada herramienta **viéndola funcionar** en un proyecto con sentido: solicitudes de apertura de cuenta, aprobaciones y alta de clientes.
+
+<div class="nota">
+
+**¿Para quién es?** Para quien empieza con estas herramientas y necesita aprender rápido. Asumimos **cero conocimiento previo**: cada término se explica la primera vez que aparece.
+
+</div>
+
+## ¿Qué vas a aprender?
+
+- **Módulo 5 (Spring + pruebas):** Spring Boot, Spring Core, Spring MVC, Spring Data JPA, JUnit, *assertions*, Mockito.
+- **Módulo 6 (web, datos y herramientas):** Maven, Git, base de datos relacional, MongoDB, Spring Batch, HTTP/REST, REST vs SOAP, servicios RESTful con Java.
+
+## Cómo usar este sitio
+
+1. Sigue la **ruta de estudio** (abajo) en orden.
+2. En cada tema verás siempre lo mismo: *qué es y por qué importa* → *cómo se ve en el proyecto* → *conceptos a dominar* → *pruébalo tú* → *errores comunes* → *autoevaluación*.
+3. Usa el **buscador** (arriba) para saltar a cualquier término.
+4. Cambia entre tema **claro/oscuro** con el botón 🌓.
+
+## Ruta de estudio sugerida
+
+| Paso | Empieza por | Tiempo aprox. |
+|---|---|---|
+| 1 | **Mapa temario → proyecto** y **Cómo correr el proyecto** | 30 min |
+| 2 | **Maven** y **Git** | 30 min |
+| 3 | **Spring Boot** → **Spring Core** → **Spring MVC** | 1.5 h |
+| 4 | **Spring Data JPA** + **Base de datos relacional** | 1 h |
+| 5 | **JUnit** → **Mockito** | 1.5 h |
+| 6 | **HTTP y REST**, **REST vs SOAP**, **MongoDB**, **Spring Batch** | 2 h |
+
+<div class="tip">
+
+**Consejo:** ten el proyecto abierto y **corre cada ejemplo** mientras lees. Se aprende mucho más rápido tocando el código que solo leyéndolo.
+
+</div>
+
+Empieza por el **Mapa temario → proyecto** para ver el todo, y luego **Cómo correr el proyecto**.
+  </script>
+
+  <script type="text/markdown" data-id="mapa" data-grupo="Empieza aquí" data-titulo="Mapa temario → proyecto">
+# 🗺️ Mapa: temario → proyecto
+
+Todo el temario se aprende sobre **un mismo proyecto**. Esta es la foto completa de cómo encaja cada herramienta.
+
+## La arquitectura, de un vistazo
+
+```mermaid
+flowchart LR
+  U["Usuario / Portal"]
+  subgraph APP["Aplicación (Spring Boot)"]
+    RT["Procesos BPM (Kogito)<br/>solicitudCuenta · evaluacionRiesgo"]
+    API["API REST<br/>ClienteController"]
+    SVC["Servicios @Service<br/>ClienteService · EvaluacionRiesgo"]
+  end
+  PG[("PostgreSQL<br/>clientes")]
+  MG[("MongoDB<br/>bitácora")]
+
+  U -->|HTTP| API
+  U -->|HTTP| RT
+  API --> SVC
+  RT --> SVC
+  SVC -->|Spring Data JPA| PG
+  SVC -->|Spring Data Mongo| MG
+```
+
+## Cada herramienta, dónde vive y qué dominar
+
+| Herramienta (temario) | Dónde se ve en el proyecto | Concepto clave a dominar |
+|---|---|---|
+| **Maven** | `ejemplo/pom.xml` | Dependencias, *starters* y ciclo de build |
+| **Git** | el repositorio y su historial | Versionar en commits pequeños |
+| **Spring Boot** | `BancaApplication`, `application.properties` | Autoconfiguración y *starters* |
+| **Spring Core** | `ClienteService` (inyección por constructor) | Inyección de dependencias (IoC) |
+| **Spring MVC** | `ClienteController` | Controladores REST, verbos, códigos |
+| **Spring Data JPA** | `Cliente`, `ClienteRepository` | Mapear objetos a tablas sin SQL |
+| **BD relacional** | perfil `postgres` + `docker-compose` | Tablas, claves, conexión |
+| **MongoDB** | `EventoSolicitud`, `EventoSolicitudRepository` | Documentos vs tablas |
+| **JUnit / assertions** | `*Test.java` | Pruebas automáticas y aserciones |
+| **Mockito** | `ClienteServiceTest` | Aislar con dobles de prueba |
+| **Spring Batch** | `BatchAltaClientesConfig` | Procesar lotes (reader→processor→writer) |
+| **HTTP / REST / SOAP** | `ApiRestIntegrationTest` | Verbos, URIs, códigos de estado |
+
+<div class="nota">
+
+Este ejemplo es una **versión simplificada** de una arquitectura BPM real. La historia completa (componentes, decisiones, mapeo a la nube) está en el documento de arquitectura del proyecto (`docs/caso-de-estudio.md`).
+
+</div>
+  </script>
+
+  <script type="text/markdown" data-id="como-correr" data-grupo="Empieza aquí" data-titulo="Cómo correr el proyecto">
+# ▶️ Cómo correr el proyecto
+
+Para aprender tocando, primero pon el proyecto en marcha.
+
+## Requisitos
+
+- **Java 21** (JDK)
+- **Maven 3.9+**
+- **Docker** (para las bases de datos)
+- **Git**
+
+Verifica:
+
+```bash
+java -version    # 21.x
+mvn -version     # 3.9+
+docker version
+```
+
+## 1) Bases de datos (PostgreSQL + MongoDB)
+
+```bash
+docker compose -f ejemplo/docker-compose.yml up -d
+docker compose -f ejemplo/docker-compose.yml ps   # ambas "Up"
+```
+
+## 2) La aplicación
+
+```bash
+# Con bases reales (perfil postgres)
+mvn -f ejemplo/pom.xml spring-boot:run -Dspring-boot.run.profiles=postgres
+# Queda en http://localhost:8080
+```
+
+## 3) Probar que vive
+
+```bash
+curl http://localhost:8080/actuator/health          # {"status":"UP"}
+# Crear un cliente
+curl -X POST http://localhost:8080/api/clientes \
+  -H "Content-Type: application/json" \
+  -d '{"nombre":"Ana","apellido":"Garcia","correo":"ana@example.com","rfc":"GAAA900101AAA"}'
+```
+
+## 4) Correr las pruebas
+
+```bash
+mvn -f ejemplo/pom.xml test                         # las 13 pruebas
+mvn -f ejemplo/pom.xml test -Dtest=ClienteServiceTest   # una sola
+```
+
+<div class="tip">
+
+**¿Sin Docker?** `mvn -f ejemplo/pom.xml test` también funciona sin perfil: usa una base **H2 en memoria** y las pruebas que necesitan Postgres/Mongo reales se omiten solas.
+
+</div>
+
+<div class="alerta">
+
+**⚠️ Errores comunes**
+
+- *"Port 8080 already in use"*: cierra lo que ocupe ese puerto o usa `server.port`.
+- *Conexión rechazada a la BD*: ¿levantaste `docker compose up -d`? ¿están "Up"?
+
+</div>
+  </script>
+
+  <!-- ============================================================= -->
+  <!-- MÓDULO 5                                                       -->
+  <!-- ============================================================= -->
+
+  <script type="text/markdown" data-id="spring-boot" data-grupo="Módulo 5" data-titulo="Spring Boot">
+# 🚀 Spring Boot
+
+## ¿Qué es y por qué importa?
+
+**Spring Boot** es la forma rápida de crear una aplicación con el framework Spring. Se encarga del trabajo aburrido por ti: configura el servidor web, la conexión a la base de datos, etc., con **valores por defecto sensatos**.
+
+> **Analogía:** Spring es una caja enorme de piezas; Spring Boot es el *kit* ya armado que arranca con apretar un botón. Tú solo agregas lo tuyo.
+
+La clave es la **autoconfiguración**: según las dependencias que incluyas (los *starters*), Spring Boot configura lo necesario.
+
+## Cómo se ve en este proyecto
+
+El punto de entrada es una clase con **una sola anotación**:
+
+```java
+@SpringBootApplication
+public class BancaApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(BancaApplication.class, args);
+    }
+}
+```
+
+La configuración vive en `application.properties`:
+
+```ini
+spring.application.name=banca-bpm-ejemplo
+spring.datasource.url=jdbc:h2:mem:banca
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] Qué hace `@SpringBootApplication` (configuración + autoconfiguración + escaneo de componentes).
+- [ ] Qué es un *starter* y por qué no escribes versiones.
+- [ ] Dónde se cambia la configuración (`application.properties` / perfiles).
+- [ ] Qué son los **perfiles** (`--spring.profiles.active=postgres`).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+mvn -f ejemplo/pom.xml spring-boot:run
+# http://localhost:8080/actuator/health  -> {"status":"UP"}
+```
+
+<div class="alerta">
+
+**⚠️ Errores comunes:** puerto ocupado (`server.port`), u olvidar `@SpringBootApplication`.
+
+</div>
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Qué hace `@SpringBootApplication`?</summary>
+
+Combina `@Configuration`, `@EnableAutoConfiguration` (autoconfiguración según el classpath) y `@ComponentScan` (busca tus *beans*). Es el arranque.
+
+</details>
+
+<details>
+<summary>2. ¿Por qué las dependencias no llevan versión?</summary>
+
+El *parent*/BOM de Spring Boot gestiona versiones compatibles. Tú dices **qué** quieres, no **qué versión**.
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="spring-core" data-grupo="Módulo 5" data-titulo="Spring Core (DI)">
+# 🧩 Spring Core — Inyección de dependencias
+
+## ¿Qué es y por qué importa?
+
+**Spring Core** es el corazón de Spring: un **contenedor** que crea tus objetos (*beans*) y les **entrega sus dependencias** automáticamente. A esto se le llama **Inversión de Control (IoC)** e **Inyección de Dependencias (DI)**.
+
+> **Analogía:** en vez de que cada clase fabrique sus herramientas, llega un "asistente" (el contenedor) y se las pone en la mano. Tú solo declaras qué necesitas.
+
+## Cómo se ve en este proyecto
+
+`ClienteService` no crea su repositorio; lo **recibe por el constructor**:
+
+```java
+@Service
+public class ClienteService {
+    private final ClienteRepository repositorio;
+
+    public ClienteService(ClienteRepository repositorio) {  // <- inyección por constructor
+        this.repositorio = repositorio;
+    }
+}
+```
+
+Spring ve `@Service`, sabe que `ClienteService` es un *bean*, encuentra otro *bean* del tipo `ClienteRepository` y lo pasa al constructor.
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] Qué es un *bean* y quién lo crea (el contenedor, no tú con `new`).
+- [ ] Inyección **por constructor** (la recomendada) vs por campo.
+- [ ] Anotaciones de *bean*: `@Component`, `@Service`, `@Repository`, `@Configuration`/`@Bean`.
+- [ ] Por qué la DI hace el código **fácil de probar** (puedes inyectar un *mock*).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+Busca otros `@Service`/`@Component` del proyecto (`EvaluacionRiesgoService`, `BitacoraService`) y observa que **todos reciben sus dependencias por constructor**.
+
+<div class="alerta">
+
+**⚠️ Error común:** crear dependencias con `new` dentro de la clase. Eso rompe la DI y dificulta las pruebas.
+
+</div>
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Qué significa "inversión de control"?</summary>
+
+Que el control de crear y conectar objetos pasa de tu código al **contenedor de Spring**. Tú declaras dependencias; él las provee.
+
+</details>
+
+<details>
+<summary>2. ¿Por qué se prefiere la inyección por constructor?</summary>
+
+Permite campos `final` (objeto siempre válido), deja explícitas las dependencias y facilita las pruebas unitarias (inyectas *mocks* sin Spring).
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="spring-mvc" data-grupo="Módulo 5" data-titulo="Spring MVC">
+# 🌐 Spring MVC
+
+## ¿Qué es y por qué importa?
+
+**Spring MVC** es la parte de Spring para construir **aplicaciones y APIs web**. Recibe peticiones HTTP, las dirige al método correcto y devuelve una respuesta (normalmente JSON).
+
+> **Analogía:** es la recepción de un edificio: recibe a quien llega (la petición), lo manda a la oficina correcta (tu método) y entrega la respuesta.
+
+## Cómo se ve en este proyecto
+
+`ClienteController` expone la API de clientes:
+
+```java
+@RestController
+@RequestMapping("/api/clientes")
+public class ClienteController {
+
+    @PostMapping                                  // POST /api/clientes
+    public ResponseEntity<Cliente> registrar(@Valid @RequestBody NuevoClienteRequest p, UriComponentsBuilder uri) {
+        Cliente creado = servicio.registrar(p.aCliente());
+        return ResponseEntity.created(/* Location */ ...).body(creado);   // 201 Created
+    }
+
+    @GetMapping("/{id}")                          // GET /api/clientes/{id}
+    public Cliente porId(@PathVariable Long id) {
+        return servicio.porId(id);
+    }
+}
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] `@RestController` y `@RequestMapping` (ruta base).
+- [ ] Mapear verbos: `@GetMapping`, `@PostMapping`, etc.
+- [ ] Leer datos: `@PathVariable` (en la URL) y `@RequestBody` (en el cuerpo).
+- [ ] Controlar el código de respuesta con `ResponseEntity` (201, 200…).
+- [ ] Validar la entrada con `@Valid`.
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+curl -i -X POST http://localhost:8080/api/clientes \
+  -H "Content-Type: application/json" \
+  -d '{"nombre":"Ana","apellido":"Garcia","correo":"ana@example.com","rfc":"GAAA900101AAA"}'
+# Observa el código 201 y la cabecera Location
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Diferencia entre @PathVariable y @RequestBody?</summary>
+
+`@PathVariable` toma un valor de la **URL** (`/clientes/5`). `@RequestBody` toma el **cuerpo** de la petición (el JSON) y lo convierte a un objeto Java.
+
+</details>
+
+<details>
+<summary>2. ¿Cómo devuelves un 201 con la ubicación del recurso creado?</summary>
+
+Con `ResponseEntity.created(uri).body(objeto)`, que pone el código **201** y la cabecera **Location**.
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="spring-data-jpa" data-grupo="Módulo 5" data-titulo="Spring Data JPA">
+# 🗃️ Spring Data JPA
+
+## ¿Qué es y por qué importa?
+
+**JPA** mapea **objetos Java a filas de una tabla** (ORM), para que no escribas SQL a mano. **Spring Data JPA** va más allá: te da el CRUD **gratis** con solo declarar una interfaz.
+
+> **Analogía:** tú describes la forma de la "ficha" (la entidad) y Spring se encarga de guardarla, buscarla y borrarla en la base.
+
+## Cómo se ve en este proyecto
+
+La **entidad** (una fila de la tabla `cliente`):
+
+```java
+@Entity
+@Table(name = "cliente")
+public class Cliente {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String nombre;
+    @Column(unique = true)
+    private String correo;
+    // ...
+}
+```
+
+El **repositorio** (CRUD gratis + consultas por nombre de método):
+
+```java
+public interface ClienteRepository extends JpaRepository<Cliente, Long> {
+    Optional<Cliente> findByCorreo(String correo);   // genera el SELECT por ti
+    boolean existsByCorreo(String correo);
+}
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] `@Entity`, `@Id`, `@GeneratedValue`, `@Column`.
+- [ ] Qué te da `JpaRepository` (save, findById, findAll, delete…).
+- [ ] *Query methods*: la consulta se deduce del **nombre** (`findByCorreo`).
+- [ ] La diferencia con MongoDB (tablas/filas vs documentos).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+mvn -f ejemplo/pom.xml test -Dtest=ClienteRepositoryTest
+# Guarda un Cliente en H2 y lo busca por correo
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Qué hace `extends JpaRepository<Cliente, Long>`?</summary>
+
+Te da operaciones CRUD listas para `Cliente` (cuya clave primaria es `Long`), sin que escribas su implementación.
+
+</details>
+
+<details>
+<summary>2. ¿Cómo crearías una búsqueda por RFC sin escribir SQL?</summary>
+
+Declarando un método `findByRfc(String rfc)` en el repositorio: Spring Data genera la consulta a partir del nombre.
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="junit" data-grupo="Módulo 5" data-titulo="JUnit y assertions">
+# ✅ JUnit (y *assertions*)
+
+## ¿Qué es y por qué importa?
+
+**JUnit** es la herramienta para escribir **pruebas automáticas**: código que comprueba que tu código funciona. Una **aserción** (*assertion*) es la afirmación que verificas ("espero que el resultado sea X").
+
+> **Analogía:** son los controles de calidad de una fábrica. Cada vez que cambias algo, revisan que todo siga saliendo bien.
+
+## Cómo se ve en este proyecto
+
+Patrón **AAA**: *Arrange* (preparar) → *Act* (actuar) → *Assert* (verificar):
+
+```java
+@Test
+void registrarAsignaCuentaEstatusYFecha() {
+    when(repositorio.existsByCorreo("ana@example.com")).thenReturn(false);   // Arrange
+    when(repositorio.save(any(Cliente.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Cliente resultado = servicio.registrar(                                   // Act
+            new Cliente("Ana", "Garcia", "ana@example.com", "GAAA900101AAA"));
+
+    assertThat(resultado.getEstatus()).isEqualTo("ACTIVO");                   // Assert (AssertJ)
+    assertThat(resultado.getNumeroCuenta()).isNotBlank().hasSize(10);
+}
+```
+
+Usamos **AssertJ** (`assertThat(...).isEqualTo(...)`): se lee como inglés y da errores claros.
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] Marcar una prueba con `@Test`.
+- [ ] El patrón **AAA**.
+- [ ] Aserciones: `isEqualTo`, `isNotBlank`, `hasSize`, `isInstanceOf`.
+- [ ] Verificar excepciones: `assertThatThrownBy(() -> ...).isInstanceOf(...)`.
+- [ ] Una prueba debe ser **repetible** y aislada.
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+mvn -f ejemplo/pom.xml test -Dtest=ClienteServiceTest
+```
+
+Cambia un valor esperado y vuelve a correr: verás **cómo se ve una prueba que falla**.
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Qué significa el patrón AAA?</summary>
+
+**Arrange** (preparas), **Act** (ejecutas el método) y **Assert** (verificas). Mantiene las pruebas claras.
+
+</details>
+
+<details>
+<summary>2. ¿Cómo verificarías que un método lanza una excepción?</summary>
+
+`assertThatThrownBy(() -> servicio.porId(99L)).isInstanceOf(ClienteNoEncontradoException.class);`
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="mockito" data-grupo="Módulo 5" data-titulo="Mockito">
+# 🎭 Mockito
+
+## ¿Qué es y por qué importa?
+
+**Mockito** crea **dobles de prueba** (*mocks*): objetos falsos que imitan a una dependencia real. Así pruebas una clase **en aislamiento**, sin tocar base de datos ni red.
+
+> **Analogía:** un maniquí en un ensayo. No es la persona real, pero sirve para probar el vestuario sin molestar a nadie.
+
+## Cómo se ve en este proyecto
+
+En `ClienteServiceTest`, el repositorio es un *mock*:
+
+```java
+@ExtendWith(MockitoExtension.class)
+class ClienteServiceTest {
+    @Mock        ClienteRepository repositorio;   // doble de prueba
+    @InjectMocks ClienteService servicio;         // se le inyecta el mock
+
+    @Test
+    void registrarRechazaCorreoDuplicado() {
+        when(repositorio.existsByCorreo("ana@example.com")).thenReturn(true);  // programa el mock
+
+        assertThatThrownBy(() -> servicio.registrar(/* ... */))
+            .isInstanceOf(CorreoDuplicadoException.class);
+
+        verify(repositorio, never()).save(any());   // verifica que NO se guardó
+    }
+}
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] `@Mock` (crea el doble) y `@InjectMocks` (lo inyecta en la clase real).
+- [ ] Programar respuestas: `when(...).thenReturn(...)` / `thenThrow(...)`.
+- [ ] Verificar interacciones: `verify(...)`, `verify(..., never())`, `times(n)`.
+- [ ] *Matchers*: `any()`, `eq(...)`.
+- [ ] La diferencia con `@WebMvcTest` + `@MockBean` (mock dentro del contexto web).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+mvn -f ejemplo/pom.xml test -Dtest=ClienteServiceTest
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Para qué sirve un mock?</summary>
+
+Para reemplazar una dependencia real por una controlada, y así probar una clase **aislada** (sin BD, red, etc.) de forma rápida y predecible.
+
+</details>
+
+<details>
+<summary>2. ¿Cómo compruebas que un método NO fue llamado?</summary>
+
+Con `verify(mock, never()).metodo(...);`
+
+</details>
+  </script>
+
+  <!-- ============================================================= -->
+  <!-- MÓDULO 6                                                       -->
+  <!-- ============================================================= -->
+
+  <script type="text/markdown" data-id="maven" data-grupo="Módulo 6" data-titulo="Maven">
+# 📦 Maven
+
+## ¿Qué es y por qué importa?
+
+**Maven** construye tu proyecto Java y gestiona sus **dependencias** (las librerías que usas). Tú declaras qué necesitas en un archivo (`pom.xml`) y Maven las descarga y arma todo.
+
+> **Analogía:** una lista de compras + un robot de cocina. Tú listas ingredientes (dependencias); Maven los trae y prepara el plato (el `.jar`).
+
+## Cómo se ve en este proyecto
+
+El `pom.xml` declara el *parent*, las dependencias (como *starters*) y los *plugins*:
+
+```xml
+<parent>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-parent</artifactId>
+  <version>3.5.10</version>
+</parent>
+
+<dependencies>
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+  </dependency>
+</dependencies>
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] Coordenadas: `groupId` : `artifactId` : `version`.
+- [ ] Qué es una **dependencia** y el papel del *parent*/BOM (versiones).
+- [ ] Fases del ciclo: `compile`, `test`, `package`, `install`.
+- [ ] Dónde se guardan las librerías (repositorio local `~/.m2`).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+mvn -f ejemplo/pom.xml compile     # compila
+mvn -f ejemplo/pom.xml test        # compila + prueba
+mvn -f ejemplo/pom.xml package     # genera el .jar ejecutable
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Qué identifica de forma única a una dependencia?</summary>
+
+Sus **coordenadas**: `groupId`, `artifactId` y `version`.
+
+</details>
+
+<details>
+<summary>2. ¿Qué hace `mvn package`?</summary>
+
+Compila, corre las pruebas y empaqueta el resultado (aquí, un `.jar` ejecutable de Spring Boot) en `target/`.
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="git" data-grupo="Módulo 6" data-titulo="Git">
+# 🔀 Git
+
+## ¿Qué es y por qué importa?
+
+**Git** es el control de versiones: guarda la **historia** de tu código en "fotos" llamadas *commits*. Puedes volver atrás, ver qué cambió y trabajar en paralelo con otros.
+
+> **Analogía:** un "guardar partida" del videojuego, pero con notas de qué hiciste en cada punto y la opción de regresar a cualquiera.
+
+## Cómo se ve en este proyecto
+
+Este proyecto se construyó en **commits pequeños y verificados**, uno por avance:
+
+```text
+F1.1: slice de negocio Spring (Módulo 5) — JPA, Service, REST y pruebas
+M6.1: BD relacional con PostgreSQL (perfil + docker-compose + Testcontainers)
+M6.4: Spring Batch — alta masiva de clientes desde CSV
+```
+
+Comandos del día a día:
+
+```bash
+git status                 # qué cambió
+git add .                  # preparar cambios
+git commit -m "mensaje"    # guardar una foto
+git log --oneline          # ver la historia
+git branch / git switch    # trabajar en ramas
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] El flujo: *working dir* → `add` (staging) → `commit`.
+- [ ] Escribir **mensajes claros** y commits pequeños.
+- [ ] Ramas: aislar trabajo y luego `merge`.
+- [ ] `.gitignore` (qué NO versionar, p. ej. `target/`).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+git log --oneline | head    # mira la historia real del proyecto
+git show --stat HEAD        # qué cambió el último commit
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Cuál es el flujo básico para guardar un cambio?</summary>
+
+Editar → `git add` (lo pasas a *staging*) → `git commit -m "..."` (lo guardas en la historia).
+
+</details>
+
+<details>
+<summary>2. ¿Para qué sirve `.gitignore`?</summary>
+
+Para que Git ignore archivos que no deben versionarse (resultados de build como `target/`, logs, secretos, etc.).
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="bd-relacional" data-grupo="Módulo 6" data-titulo="Base de datos relacional">
+# 🐘 Base de datos relacional (PostgreSQL)
+
+## ¿Qué es y por qué importa?
+
+Una **base relacional** guarda los datos en **tablas** (filas y columnas) con relaciones entre sí. Es el almacén más común para datos estructurados (clientes, cuentas, movimientos).
+
+> **Analogía:** una hoja de cálculo muy potente y confiable: cada tabla es una hoja, cada fila un registro, con reglas que garantizan integridad.
+
+## Cómo se ve en este proyecto
+
+En desarrollo usamos **H2** (en memoria); para datos reales, **PostgreSQL** vía un *perfil* y `docker-compose`:
+
+```ini
+# application-postgres.properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/banca
+spring.jpa.hibernate.ddl-auto=update
+```
+
+```bash
+docker compose -f ejemplo/docker-compose.yml up -d   # Postgres 16
+mvn -f ejemplo/pom.xml spring-boot:run -Dspring-boot.run.profiles=postgres
+```
+
+La entidad `Cliente` (ver **Spring Data JPA**) se convierte en la tabla `cliente`.
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] Tabla, fila, columna, **clave primaria** y restricción `UNIQUE`.
+- [ ] Qué es una cadena de conexión (JDBC URL).
+- [ ] **Perfiles** de Spring para cambiar de base sin tocar código.
+- [ ] La diferencia con un almacén documental (MongoDB).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+# Ver los datos directamente en el Postgres real:
+docker exec banca-postgres psql -U banca -d banca -c "SELECT id, nombre, correo FROM cliente;"
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Qué garantiza una clave primaria?</summary>
+
+Que cada fila se identifique de forma **única** (no se repite) dentro de la tabla.
+
+</details>
+
+<details>
+<summary>2. ¿Cómo cambia el proyecto de H2 a PostgreSQL?</summary>
+
+Activando el **perfil** `postgres` (`--spring.profiles.active=postgres`): cambia la configuración de conexión, **no el código**.
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="mongodb" data-grupo="Módulo 6" data-titulo="MongoDB">
+# 🍃 MongoDB
+
+## ¿Qué es y por qué importa?
+
+**MongoDB** es una base **documental**: guarda **documentos** parecidos a JSON, no tablas. Es flexible y encaja bien con datos tipo "histórico" o de forma variable.
+
+> **Analogía:** una caja de fichas con forma libre, en vez de una hoja de cálculo de columnas fijas.
+
+## Cómo se ve en este proyecto
+
+La **bitácora** de eventos de una solicitud se guarda como documentos:
+
+```java
+@Document(collection = "eventos_solicitud")
+public class EventoSolicitud {
+    @Id private String id;
+    private String solicitudId;
+    private String tipo;
+    private Instant fecha;
+}
+
+public interface EventoSolicitudRepository extends MongoRepository<EventoSolicitud, String> {
+    List<EventoSolicitud> findBySolicitudIdOrderByFechaAsc(String solicitudId);
+}
+```
+
+Fíjate: **misma idea** que con JPA (entidad + repositorio), pero con `@Document` y `MongoRepository`.
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] Documento vs fila; colección vs tabla.
+- [ ] `@Document`, `@Id`, `MongoRepository`.
+- [ ] Cuándo conviene documental (datos flexibles/histórico) vs relacional (datos estructurados con relaciones).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+mvn -f ejemplo/pom.xml test -Dtest=EventoSolicitudMongoTest
+# (corre contra un MongoDB real en contenedor si Docker está activo)
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿En qué se diferencia un documento de una fila?</summary>
+
+Un documento (tipo JSON) puede tener estructura **flexible** y anidada; una fila sigue un **esquema fijo** de columnas. Mongo agrupa documentos en *colecciones*; lo relacional agrupa filas en *tablas*.
+
+</details>
+
+<details>
+<summary>2. ¿Por qué la bitácora encaja en Mongo y los clientes en PostgreSQL?</summary>
+
+La bitácora es histórico tipo "evento" (se agrega, varía de forma) → documental. Los clientes son datos estructurados con restricciones (correo único) y relaciones → relacional.
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="spring-batch" data-grupo="Módulo 6" data-titulo="Spring Batch">
+# 🏭 Spring Batch
+
+## ¿Qué es y por qué importa?
+
+**Spring Batch** procesa **grandes volúmenes por lotes** (sin intervención humana): leer un archivo, transformarlo y guardarlo, por trozos (*chunks*), de forma robusta.
+
+> **Analogía:** una línea de producción: entra materia prima (datos), se procesa pieza por pieza y sale el producto (registros guardados).
+
+## Cómo se ve en este proyecto
+
+Un *job* da de **alta masiva de clientes desde un CSV** con el patrón **reader → processor → writer**:
+
+```java
+@Bean
+public Step altaClientesStep(/* ... */) {
+    return new StepBuilder("altaClientesStep", jobRepository)
+            .<SolicitanteCsv, Cliente>chunk(10, txManager)   // de 10 en 10
+            .reader(lectorSolicitantes)     // lee el CSV
+            .processor(procesadorAltaCliente) // CSV -> Cliente (y descarta duplicados)
+            .writer(escritorClientes)        // guarda en la BD
+            .build();
+}
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] `Job` y `Step`; el procesamiento **chunk-oriented**.
+- [ ] El trío **reader → processor → writer**.
+- [ ] Por qué los jobs **no** se ejecutan al arrancar (`spring.batch.job.enabled=false`).
+- [ ] Idempotencia (re-ejecutar sin duplicar datos).
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+mvn -f ejemplo/pom.xml test -Dtest=AltaClientesBatchTest
+# Lanza el job y verifica que dio de alta a los clientes del CSV
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Cuál es el patrón de un Step típico?</summary>
+
+**reader** (lee) → **processor** (transforma/filtra) → **writer** (escribe), procesando en *chunks* (lotes pequeños) dentro de una transacción.
+
+</details>
+
+<details>
+<summary>2. ¿Por qué interesa que el job sea idempotente?</summary>
+
+Para poder **re-ejecutarlo sin duplicar** datos (aquí, el *processor* omite los correos que ya existen).
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="http-rest" data-grupo="Módulo 6" data-titulo="HTTP y REST">
+# 🌍 HTTP y REST
+
+## ¿Qué es y por qué importa?
+
+**HTTP** es el protocolo de la web: el cliente hace una **petición** (con un **verbo** y una **URL**) y el servidor responde (con un **código de estado** y un cuerpo). **REST** es un estilo para diseñar APIs sobre HTTP, orientado a **recursos** (p. ej. "clientes").
+
+## Verbos, URIs y códigos
+
+| Verbo | Significado | Ejemplo en el proyecto |
+|---|---|---|
+| `GET` | Leer | `GET /api/clientes/{id}` |
+| `POST` | Crear | `POST /api/clientes` |
+| `PUT`/`PATCH` | Actualizar | (sobre un recurso existente) |
+| `DELETE` | Borrar | `DELETE /solicitudCuenta/{id}` |
+
+| Código | Significado |
+|---|---|
+| 200 OK | Éxito |
+| 201 Created | Recurso creado |
+| 400 Bad Request | Datos inválidos |
+| 404 Not Found | No existe |
+| 409 Conflict | Conflicto (p. ej. correo duplicado) |
+
+## Cómo se ve en este proyecto
+
+La prueba `ApiRestIntegrationTest` ejercita la API real y comprueba los códigos:
+
+```java
+// POST válido -> 201 ; inexistente -> 404 ; correo inválido -> 400
+assertThat(creado.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+```
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] Anatomía de una petición/respuesta HTTP (verbo, URL, cabeceras, cuerpo).
+- [ ] Semántica de los **verbos** y de los **códigos de estado**.
+- [ ] Qué es un **recurso** y una **URI**.
+- [ ] Que REST suele usar **JSON**.
+
+</div>
+
+## ▶️ Pruébalo tú
+
+```bash
+curl -i http://localhost:8080/api/clientes/999999     # -> 404
+curl -i -X POST http://localhost:8080/api/clientes \
+  -H "Content-Type: application/json" -d '{"correo":"malo"}'   # -> 400
+```
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. ¿Qué verbo y código usarías para crear un recurso?</summary>
+
+`POST` para crear; el servidor responde **201 Created** (idealmente con la cabecera `Location`).
+
+</details>
+
+<details>
+<summary>2. ¿Qué significa un 404 y un 409?</summary>
+
+**404**: el recurso no existe. **409**: conflicto con el estado actual (en el proyecto, intentar registrar un correo que ya existe).
+
+</details>
+  </script>
+
+  <script type="text/markdown" data-id="rest-vs-soap" data-grupo="Módulo 6" data-titulo="REST vs SOAP">
+# ⚖️ REST vs SOAP
+
+## ¿Qué es y por qué importa?
+
+Tanto **REST** como **SOAP** sirven para que dos sistemas se comuniquen, pero con filosofías distintas. Saber cuándo usar cada uno es parte del trabajo de integración.
+
+## Comparación
+
+| | REST | SOAP |
+|---|---|---|
+| **Estilo** | Arquitectura sobre HTTP, orientada a **recursos** | Protocolo basado en **mensajes XML** |
+| **Formato** | JSON (típico) | XML (obligatorio, con *envelope*) |
+| **Contrato** | OpenAPI (opcional) | WSDL (formal) |
+| **Ventajas** | Simple, ligero, ubicuo, cacheable | Contratos estrictos, estándares (seguridad/transacciones) |
+| **Cuándo** | APIs web/móviles, microservicios | Integraciones empresariales/legadas con contrato formal |
+
+## Cómo se ve en este proyecto
+
+El proyecto **crea servicios REST** (`ClienteController` + los REST autogenerados del proceso). Y desde un proceso puede **consumir** un servicio mediante un *service task*:
+
+```text
+proceso evaluacionRiesgo  --(service task)-->  EvaluacionRiesgoService.evaluar(...)
+```
+
+El mismo patrón sirve para invocar un servicio **REST o SOAP** externo: cambia la implementación del servicio, no el flujo del proceso.
+
+<div class="concepto">
+
+**🎯 Conceptos que debes dominar**
+
+- [ ] REST = recursos + verbos HTTP + (normalmente) JSON.
+- [ ] SOAP = mensajes XML + contrato WSDL.
+- [ ] Ventajas/desventajas y **cuándo** elegir cada uno.
+
+</div>
+
+## ✅ Autoevaluación
+
+<details>
+<summary>1. Una app móvil nueva consume tu API. ¿REST o SOAP?</summary>
+
+**REST** (con JSON): más ligero, simple y ubicuo para clientes web/móviles.
+
+</details>
+
+<details>
+<summary>2. ¿Qué aporta SOAP que REST no garantiza por sí mismo?</summary>
+
+Un **contrato formal** (WSDL) y estándares empresariales (WS-Security, transacciones), útiles en integraciones legadas estrictas.
+
+</details>
+  </script>
+
+  <!-- ============================================================= -->
+  <!-- REFERENCIA                                                     -->
+  <!-- ============================================================= -->
+
+  <script type="text/markdown" data-id="glosario" data-grupo="Referencia" data-titulo="Glosario">
+# 📖 Glosario
+
+Términos clave, en palabras llanas.
+
+- **BPM / BPMN** — Gestión de procesos de negocio / su notación gráfica (cajas y flechas que describen un proceso).
+- **Bean** — Objeto que crea y gestiona el contenedor de Spring.
+- **IoC / DI** — Inversión de Control / Inyección de Dependencias: Spring crea tus objetos y les pasa lo que necesitan.
+- **ORM** — *Object-Relational Mapping*: mapear objetos Java a tablas (lo hace JPA/Hibernate).
+- **JPA** — Estándar de Java para ORM; **Spring Data JPA** te da repositorios listos.
+- **Entidad** — Clase que representa una fila de una tabla (`@Entity`).
+- **Repositorio** — Interfaz que da operaciones de datos (guardar, buscar) sin escribir su implementación.
+- **REST** — Estilo de API sobre HTTP orientado a recursos (usa verbos y, normalmente, JSON).
+- **Endpoint** — Una URL + verbo concretos que atiende el servidor (p. ej. `POST /api/clientes`).
+- **Verbo HTTP** — La acción: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`.
+- **Código de estado** — Resultado de la petición: 200, 201, 400, 404, 409…
+- **JSON** — Formato de datos ligero (texto) usado por las APIs REST.
+- **SOAP / WSDL** — Protocolo de mensajes XML / su contrato formal.
+- **Mock** — Doble de prueba que imita una dependencia (Mockito).
+- **Aserción** — Afirmación que una prueba verifica (`assertThat(...)`).
+- **Perfil (profile)** — Conjunto de configuración activable (p. ej. `postgres`) sin cambiar el código.
+- **Contenedor / Imagen** — Empaquetado de la app y sus dependencias (Docker); la imagen es la plantilla, el contenedor la instancia en ejecución.
+- **CloudEvents** — Formato estándar para eventos.
+- **Service task** — Paso de un proceso BPM que invoca código/servicio (vs *user task*, que requiere a una persona).
+  </script>
+
+  <!-- ===================== LIBRERÍAS (locales, offline) ===================== -->
+  <script src="js/vendor/marked.min.js"></script>
+  <script src="js/vendor/highlight.min.js"></script>
+  <script src="js/vendor/mermaid.min.js"></script>
+  <!-- ===================== LÓGICA ===================== -->
+  <script src="js/app.js"></script>
+</body>
+</html>
